@@ -37,7 +37,7 @@ public class AMConfig
             {
                 log.error("Error when copying config template to config folder", ex);
             }
-            configFile = new File(defaultRes.getPath());
+            configFile = new File(configFile.getPath());
         }
 
         try
