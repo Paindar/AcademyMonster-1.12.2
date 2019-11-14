@@ -49,14 +49,18 @@ public class EntityRailgunFXNative extends EntityRayBaseNative
     public EntityRailgunFXNative(EntityLivingBase player, Vec3d str, Vec3d end) {
         super(player);
         //new Motion3D(player, true).applyToEntity(this);
+        posX=player.posX;
+        posY=player.posY + player.getEyeHeight();
+        posZ=player.posZ;
+        this.rotationYaw = player.rotationYaw;
+        this.rotationPitch = player.rotationPitch;
 
         this.life = 50;
-        this.blendInTime = 150;
+        this.blendInTime = .15;
         this.widthShrinkTime = 0.8;
         this.widthWiggleRadius = 0.3;
         this.maxWiggleSpeed = 0.8;
         this.blendOutTime = 1;
-        setPosition(posX,posY+player.getEyeHeight()/4,posZ);
         ignoreFrustumCheck = true;
         setFromTo(str, end);
 

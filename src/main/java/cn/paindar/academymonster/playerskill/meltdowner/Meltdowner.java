@@ -13,6 +13,7 @@ import cn.academy.client.render.particle.MdParticleFactory;
 import cn.academy.client.render.util.ACRenderingHelper;
 import cn.academy.client.sound.ACSounds;
 import cn.academy.client.sound.FollowEntitySound;
+import cn.academy.entity.EntityMDRay;
 import cn.academy.event.BlockDestroyEvent;
 import cn.lambdalib2.s11n.network.NetworkMessage.Listener;
 import cn.lambdalib2.util.EntitySelectors;
@@ -321,7 +322,7 @@ public class Meltdowner extends Skill {
         @SideOnly(Side.CLIENT)
         @Listener(channel=MSG_PERFORM, side=Side.CLIENT)
         void c_perform(Vec3d str, Vec3d end) {
-            player.world.spawnEntity(new EntityMobMDRay(player, str, end));
+            player.world.spawnEntity(new EntityMDRay(player, end.subtract(str).length()));
         }
 
         private float timeRate(int ct) {
