@@ -25,16 +25,13 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 /**
  * Created by Paindar on 2017/2/17.
  */
-public class MessageArcGenEffect implements IMessage, IMsgAction
+public class MessageArcGenEffect extends MessageAutos11n
 {
     @Override
     public boolean execute() {
-        World world = Minecraft.getMinecraft().world;
-        //World world= SideUtils.getWorld(msg.nbt.getInteger("world"));
-        EntityLivingBase speller= (EntityLivingBase) world.getEntityByID(nbt.getInteger("mob"));
         if (speller==null)
         {
-            AcademyMonster.log.warn("<ArcGen>Fail to find entity whose id is "+nbt.getInteger("mob"));
+            AcademyMonster.log.warn("<ArcGen>Fail to find entity.");
             return true;
         }
         EntityMobArc arc = new EntityMobArc(speller, ArcPatterns.weakArc);
@@ -43,52 +40,28 @@ public class MessageArcGenEffect implements IMessage, IMsgAction
         arc.hideWiggle = 0.4;
         arc.addMotionHandler(new Life(10));
         arc.lengthFixed = false;
-        arc.length = nbt.getDouble("range");
-        arc.setWorld(world);
+        arc.length = range;
 
-        world.spawnEntity(arc);
-        world.playSound(speller.posX, speller.posY, speller.posZ,
+        speller.world.spawnEntity(arc);
+        speller.world.playSound(speller.posX, speller.posY, speller.posZ,
                 new SoundEvent(new ResourceLocation("academy","em.arc_weak")), SoundCategory.HOSTILE
                 ,.5f,1f,false);
         return true;
     }
 
-    public static class Handler implements IMessageHandler<MessageArcGenEffect, IMessage>
+    public static class H extends Handler<MessageArcGenEffect>
     {
-        @Override
-        @SideOnly(Side.CLIENT)
-        public IMessage onMessage(MessageArcGenEffect msg, MessageContext ctx)
-        {
-            if (ctx.side == Side.CLIENT)
-            {
-                NetworkManager.addAction(msg);
-            }
-            return null;
-        }
+
     }
 
-    NBTTagCompound nbt;
-    EntityLivingBase mob;
+    EntityLivingBase speller;
     float range;
 
     public MessageArcGenEffect(){}
 
     public MessageArcGenEffect(EntityLivingBase speller, float range)
     {
-        nbt = new NBTTagCompound();
-        nbt.setInteger("world", speller.dimension);
-        nbt.setInteger("mob", speller.getEntityId());
-        nbt.setDouble("range", range);
-    }
-
-    public void fromBytes(ByteBuf buf)
-    {
-        nbt= ByteBufUtils.readTag(buf);
-    }
-
-    @Override
-    public void toBytes(ByteBuf buf)
-    {
-        ByteBufUtils.writeTag(buf, nbt);
+        this.speller = speller;
+        this.range = range;
     }
 }

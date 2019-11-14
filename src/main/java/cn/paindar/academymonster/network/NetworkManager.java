@@ -1,18 +1,23 @@
 package cn.paindar.academymonster.network;
 
 import cn.lambdalib2.registry.StateEventCallback;
+import cn.lambdalib2.s11n.nbt.NBTS11n;
+import cn.lambdalib2.s11n.network.NetworkS11n;
 import cn.lambdalib2.util.SideUtils;
 import cn.paindar.academymonster.core.AcademyMonster;
 import cn.paindar.academymonster.entity.EntityMagManipBlock;
 import cn.paindar.academymonster.entity.EntityPlasmaBodyEffect;
 import cn.paindar.academymonster.entity.EntityTornadoEffect;
+import io.netty.buffer.ByteBuf;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.monster.EntityMob;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.World;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
@@ -23,6 +28,7 @@ import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.SimpleNetworkWrapper;
 import net.minecraftforge.fml.relauncher.Side;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -58,16 +64,16 @@ public class NetworkManager
     @StateEventCallback
     public static void init(FMLPreInitializationEvent event)
     {
-        registerMessage(MessageSound.Handler.class, MessageSound.class, Side.CLIENT);
-        registerMessage(MessageMdRayEffect.Handler.class, MessageMdRayEffect.class, Side.CLIENT);
-        registerMessage(MessageRailgunEffect.Handler.class, MessageRailgunEffect.class, Side.CLIENT);
-        registerMessage(MessageSkillInfoSync.Handler.class, MessageSkillInfoSync.class,Side.CLIENT);
-        registerMessage(MessageArcGenEffect.Handler.class, MessageArcGenEffect.class,Side.CLIENT);
-        registerMessage(MessageThunderBolt.Handler.class, MessageThunderBolt.class,Side.CLIENT);
+        registerMessage(MessageSound.H.class, MessageSound.class, Side.CLIENT);
+        registerMessage(MessageMdRayEffect.H.class, MessageMdRayEffect.class, Side.CLIENT);
+        registerMessage(MessageRailgunEffect.H.class, MessageRailgunEffect.class, Side.CLIENT);
+        registerMessage(MessageSkillInfoSync.H.class, MessageSkillInfoSync.class,Side.CLIENT);
+        registerMessage(MessageArcGenEffect.H.class, MessageArcGenEffect.class,Side.CLIENT);
+        registerMessage(MessageThunderBolt.H.class, MessageThunderBolt.class,Side.CLIENT);
         registerMessage(MessageGroundShockEffect.Handler.class, MessageGroundShockEffect.class,Side.CLIENT);
-        registerMessage(MessageMagManipBlockSync.Handler.class, MessageMagManipBlockSync.class,Side.CLIENT);
-        registerMessage(MessagePlasmaEffectSync.Handler.class,MessagePlasmaEffectSync.class,Side.CLIENT);
-        registerMessage(MessageFleshRippingEffect.Handler.class,MessageFleshRippingEffect.class,Side.CLIENT);
+        registerMessage(MessageMagManipBlockSync.H.class, MessageMagManipBlockSync.class,Side.CLIENT);
+        registerMessage(MessagePlasmaEffectSync.H.class,MessagePlasmaEffectSync.class,Side.CLIENT);
+        registerMessage(MessageFleshRippingEffect.H.class,MessageFleshRippingEffect.class,Side.CLIENT);
         if(SideUtils.isClient())
         {
             MinecraftForge.EVENT_BUS.register(new NetworkManager());
@@ -152,7 +158,7 @@ public class NetworkManager
     {
         if(!player.getEntityWorld().isRemote)
         {
-            MessageThunderBolt msg = new MessageThunderBolt(source,target,list);
+            MessageAutos11n msg = new MessageThunderBolt(source,target,list);
             instance.sendTo(msg, player);
         }
         else

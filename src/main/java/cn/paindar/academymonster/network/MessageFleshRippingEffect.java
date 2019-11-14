@@ -3,26 +3,15 @@ package cn.paindar.academymonster.network;
 import cn.academy.client.render.util.ACRenderingHelper;
 import cn.academy.client.sound.ACSounds;
 import cn.academy.entity.EntityBloodSplash;
-import cn.lambdalib2.s11n.nbt.NBTS11n;
 import cn.lambdalib2.util.RandUtils;
-import io.netty.buffer.ByteBuf;
-import net.minecraft.client.Minecraft;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.SoundCategory;
-import net.minecraftforge.fml.common.network.ByteBufUtils;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
-import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
-import sun.nio.ch.Net;
 
 /**
  * Created by Paindar on 2017/2/11.
  */
-public class MessageFleshRippingEffect implements IMessage, IMsgAction
+public class MessageFleshRippingEffect extends MessageAutos11n
 {
     @Override
     public boolean execute() {
@@ -42,21 +31,7 @@ public class MessageFleshRippingEffect implements IMessage, IMsgAction
         return true;
     }
 
-    public static class Handler implements IMessageHandler<MessageFleshRippingEffect, IMessage>
-    {
-        @Override
-        @SideOnly(Side.CLIENT)
-        public IMessage onMessage(MessageFleshRippingEffect msg, MessageContext ctx)
-        {
-            EntityLivingBase target = msg.target;
-
-            if (ctx.side == Side.CLIENT && target!=null)
-            {
-                NetworkManager.addAction(msg);
-            }
-            return null;
-        }
-    }
+    public static class H extends Handler<MessageFleshRippingEffect> { }
     EntityLivingBase target;
 
     public MessageFleshRippingEffect(){}
@@ -64,21 +39,5 @@ public class MessageFleshRippingEffect implements IMessage, IMsgAction
     public MessageFleshRippingEffect(EntityLivingBase target)
     {
         this.target = target;
-    }
-
-    @Override
-    public void fromBytes(ByteBuf buf)
-    {
-        NBTTagCompound nbt= ByteBufUtils.readTag(buf);
-        NBTS11n.read(nbt, this);
-
-    }
-
-    @Override
-    public void toBytes(ByteBuf buf)
-    {
-        NBTTagCompound nbt=new NBTTagCompound();
-        NBTS11n.write(nbt, this);
-        ByteBufUtils.writeTag(buf, nbt);
     }
 }
