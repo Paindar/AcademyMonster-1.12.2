@@ -83,7 +83,7 @@ public class SkillManager
             return ;
         SkillInfo info=new SkillInfo();
         info.klass=skill;
-        info.prob=defaultProb;
+        info.prob=prob;
         info.lvl=skillLevel;
         info.type=type;
 
@@ -125,8 +125,8 @@ public class SkillManager
         registerSkill(AMPlasmaCannon.class,0.3f,4,Catalog.vector);
         registerSkill(AMElectronMissile.class,0.8f,4,Catalog.meltdown);
         registerSkill(AMLocManip.class,0.8f,4,Catalog.teleport);
-
-        list.sort((a,b)->(a.type!=b.type)?(a.type.ordinal()<b.type.ordinal()?-1:1):(a.lvl!=b.lvl?(a.lvl<b.lvl?-1:1):0));
+        list.sort((a,b)->(a.lvl!=b.lvl?(a.lvl<b.lvl?-1:1):0));
+        //list.sort((a,b)->(a.type!=b.type)?(a.type.ordinal()<b.type.ordinal()?-1:1):(a.lvl!=b.lvl?(a.lvl<b.lvl?-1:1):0));
     }
 
 
@@ -160,7 +160,7 @@ public class SkillManager
                             info = list.get(mark);
                             if (!banList.contains(info.klass.getSimpleName().substring(2)))
                             {
-                                if (info.lvl <= level)
+                                if (info.lvl == level)
                                 {
                                     filtList.add(info);
                                     sumWeight += info.prob;
@@ -202,6 +202,8 @@ public class SkillManager
                     float randExp = RandUtils.nextFloat();
                     randExp = 0.01f + randExp * randExp;
                     builder.append(info.name).append('~').append(randExp).append('-');
+                    filtList.clear();
+                    sumWeight=0;
                 }
                 data.setSkillData(builder.toString());
                 data.level = level - 1;
