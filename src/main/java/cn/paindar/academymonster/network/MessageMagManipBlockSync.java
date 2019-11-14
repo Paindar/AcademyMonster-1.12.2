@@ -1,10 +1,11 @@
 package cn.paindar.academymonster.network;
 
-import cn.lambdalib2.s11n.nbt.NBTS11n;
+import cn.lambdalib2.util.SideUtils;
+import cn.paindar.academymonster.core.AcademyMonster;
 import cn.paindar.academymonster.entity.EntityMagManipBlock;
 import io.netty.buffer.ByteBuf;
-import net.minecraft.client.Minecraft;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.world.World;
 import net.minecraftforge.fml.common.network.ByteBufUtils;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
@@ -15,8 +16,24 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 /**
  * Created by Paindar on 2017/6/5.
  */
-public class MessageMagManipBlockSync implements IMessage
+public class MessageMagManipBlockSync implements IMessage, IMsgAction
 {
+    @Override
+    public boolean execute() {
+
+        World world = SideUtils.getWorld(nbt.getInteger("world"));
+        EntityMagManipBlock mob = (EntityMagManipBlock) world.getEntityByID(nbt.getInteger("id"));
+        boolean value = nbt.getBoolean("value");
+        if (mob==null)
+        {
+            AcademyMonster.log.warn("<ArcGen>Fail to find entity whose id is "+nbt.getInteger("id"));
+            return true;
+        }
+        mob.setPlaceWhenCollide(value);
+
+        return true;
+    }
+
     public static class Handler implements IMessageHandler<MessageMagManipBlockSync, IMessage>
     {
         @Override
@@ -25,32 +42,30 @@ public class MessageMagManipBlockSync implements IMessage
         {
             if (ctx.side == Side.CLIENT)
             {
-                msg.entity.setPlaceWhenCollide(msg.value);
+                NetworkManager.addAction(msg);
             }
             return null;
         }
     }
-    EntityMagManipBlock entity;
-    boolean value;
+    NBTTagCompound nbt;
     public MessageMagManipBlockSync(){}
     public MessageMagManipBlockSync(EntityMagManipBlock entity, boolean value)
     {
-        this.entity = entity;
-        this.value = value;
+        nbt = new NBTTagCompound();
+        nbt.setInteger("world", entity.dimension);
+        nbt.setInteger("id",entity.getEntityId());
+        nbt.setBoolean("value",value);
     }
 
-    @Override
+
     public void fromBytes(ByteBuf buf)
     {
-        NBTTagCompound nbt= ByteBufUtils.readTag(buf);
-        NBTS11n.read(nbt, this);
+        nbt= ByteBufUtils.readTag(buf);
     }
 
     @Override
     public void toBytes(ByteBuf buf)
     {
-        NBTTagCompound nbt=new NBTTagCompound();
-        NBTS11n.write(nbt, this);
         ByteBufUtils.writeTag(buf, nbt);
     }
 }
