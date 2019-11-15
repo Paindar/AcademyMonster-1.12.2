@@ -20,6 +20,7 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.SoundEvent;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import net.minecraftforge.common.MinecraftForge;
@@ -67,11 +68,11 @@ public class AMRailgun extends BaseSkill
 
     private List<Entity> selectTargets(EntityLivingBase entity, double incr_)
     {
-        Vec3d motion = lookingPos(entity,0.1).normalize();
-        float yaw = (float) (-MathUtils.PI_F * 0.5f - getYaw(motion)),
-                pitch = (float) getPitch(motion);
-        Vec3d start = motion;
-        Vec3d slope = motion;
+        Vec2f py = entity.getPitchYaw();
+        float yaw = -py.y*3.1415926f/180.0f - MathUtils.PI_F * 0.5f,
+                pitch = py.x*3.1415926f/180.0f;
+        Vec3d start = entity.getPositionEyes(1f);
+        Vec3d slope = entity.getLookVec().rotatePitch(RandUtils.rangef(-.5f, .5f)*0.1f).rotateYaw(RandUtils.rangef(-.5f, .5f)*0.1f);
 
         Vec3d vp0 = new Vec3d(0, 0, 1);
         vp0 = vp0.rotatePitch(pitch).rotateYaw(yaw);
