@@ -17,6 +17,7 @@ import cn.lambdalib2.s11n.network.NetworkMessage.Listener;
 import cn.lambdalib2.s11n.network.TargetPoints;
 import cn.lambdalib2.util.*;
 
+import cn.paindar.academymonster.core.AcademyMonster;
 import cn.paindar.academymonster.entity.EntityRailgunFXNative;
 import cn.paindar.academymonster.events.RayShootingEvent;
 import net.minecraft.block.Block;
@@ -35,6 +36,7 @@ import net.minecraft.util.SoundCategory;
 import net.minecraft.util.SoundEvent;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import net.minecraftforge.common.MinecraftForge;
@@ -143,11 +145,11 @@ public class Railgun extends Skill {
 
     private List<Entity> selectTargets(EntityLivingBase entity, EntityPlayer player, double incr_)
     {
-        Vec3d motion = lookingPos(entity,0.1).normalize();
-        float yaw = (float) (-MathUtils.PI_F * 0.5f - getYaw(motion)),
-                pitch = (float) getPitch(motion);
-        Vec3d start = motion;
-        Vec3d slope = motion;
+        Vec2f py = player.getPitchYaw();
+        float yaw = -py.y*3.1415926f/180.0f - MathUtils.PI_F * 0.5f,
+                pitch = py.x*3.1415926f/180.0f;
+        Vec3d start = entity.getPositionEyes(1f);
+        Vec3d slope = player.getLookVec().rotatePitch(RandUtils.rangef(-.5f, .5f)*0.1f).rotateYaw(RandUtils.rangef(-.5f, .5f)*0.1f);
 
         Vec3d vp0 = new Vec3d(0, 0, 1);
         vp0 = vp0.rotatePitch(pitch).rotateYaw(yaw);
@@ -208,8 +210,11 @@ public class Railgun extends Skill {
                             RayShootingEvent event = new RayShootingEvent(player, (EntityLivingBase) e, incr_);
                             boolean result = MinecraftForge.EVENT_BUS.post(event);
                             incr_=event.range;
-                            if (!result)
+                            AcademyMonster.log.info("try attack "+e.getName());
+                            if (!result) {
                                 ctx.attack(e, dmg);
+                                AcademyMonster.log.info("attack "+e.getName()+", damage = "+dmg);
+                            }
                             else {
                                 incr_ -= (e.getDistanceSq(lastEntity));
                                 paths.remove(paths.size()-1);
