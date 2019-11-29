@@ -1,5 +1,6 @@
 package cn.paindar.academymonster.entity.datapart;
 
+import cn.academy.event.ability.CalcEvent;
 import cn.lambdalib2.datapart.DataPart;
 import cn.lambdalib2.datapart.EntityData;
 import cn.lambdalib2.datapart.RegDataPart;
@@ -46,6 +47,8 @@ public class MobSkillData extends DataPart<EntityMob>
     private EntityAIBaseX ai=null;
     @SerializeExcluded
     private boolean locked = false;
+    @SerializeExcluded
+    private double enchancement = 0.00;
 
     public MobSkillData()
     {
@@ -143,6 +146,10 @@ public class MobSkillData extends DataPart<EntityMob>
         ai=null;
     }
 
+    public double getEnchancement() {
+        return enchancement;
+    }
+
     public enum Events {
         @RegEventHandler()
         instance;
@@ -154,6 +161,17 @@ public class MobSkillData extends DataPart<EntityMob>
             {
                 MobSkillData data =  MobSkillData.get((EntityMob) evt.getEntityLiving());
                 data.clear();
+            }
+        }
+
+
+        @SubscribeEvent
+        public void onPlayerCauseDamage(CalcEvent.SkillAttack evt)
+        {
+            if(evt.target instanceof EntityMob)
+            {
+                MobSkillData data = MobSkillData.get((EntityMob) evt.target);
+                evt.targetEnhancement = data.enchancement;
             }
         }
     }

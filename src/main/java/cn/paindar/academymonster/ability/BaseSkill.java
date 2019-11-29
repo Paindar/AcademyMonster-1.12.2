@@ -1,13 +1,12 @@
 package cn.paindar.academymonster.ability;
 
-import cn.lambdalib2.util.SideUtils;
 import cn.paindar.academymonster.ability.api.MobSkillDamageSource;
 import cn.paindar.academymonster.ability.api.event.CalcEventMob;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.monster.EntityMob;
 import net.minecraft.util.text.translation.I18n;
-import net.minecraft.world.World;
+import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.network.ByteBufUtils;
 
 /**
@@ -84,10 +83,16 @@ public abstract class BaseSkill
 
     public boolean attack(EntityLivingBase target,float damage)
     {
-        damage = CalcEventMob.calc(new CalcEventMob.MobSkillAttack(speller, this, target, damage));
-
-        if (damage > 0)
+        CalcEventMob.MobSkillAttack evt = new CalcEventMob.MobSkillAttack(speller, this, target, damage);
+        boolean result = MinecraftForge.EVENT_BUS.post(evt);
+        damage = evt.value;
+        if (damage > 0 && !result)
         {
+            double delta = (evt.sourceEnhancement-evt.targetEnhancement)/1000;
+            if(delta > 3e-3)
+                damage = (float)(1f + (1.7689*delta*delta))*damage;
+            else if(delta < -3e-3)
+                damage = (float)(1f - (2.25  *delta*delta))*damage;
             target.attackEntityFrom(new MobSkillDamageSource(speller, this), getFinalDamage(damage));
         }
         return true;
@@ -95,10 +100,17 @@ public abstract class BaseSkill
 
     public boolean attackIgnoreArmor(EntityLivingBase target,float damage)
     {
-        damage = CalcEventMob.calc(new CalcEventMob.MobSkillAttack(speller, this, target, damage));
+        CalcEventMob.MobSkillAttack evt = new CalcEventMob.MobSkillAttack(speller, this, target, damage);
+        boolean result = MinecraftForge.EVENT_BUS.post(evt);
+        damage = evt.value;
 
-        if (damage > 0)
+        if (damage > 0 && !result)
         {
+            double delta = (evt.sourceEnhancement-evt.targetEnhancement)/1000;
+            if(delta > 3e-3)
+                damage = (float)(1f + (1.7689*delta*delta))*damage;
+            else if(delta < -3e-3)
+                damage = (float)(1f - (2.25  *delta*delta))*damage;
             target.attackEntityFrom(new MobSkillDamageSource(speller, this).setDamageBypassesArmor(), getFinalDamage(damage));
         }
         return true;

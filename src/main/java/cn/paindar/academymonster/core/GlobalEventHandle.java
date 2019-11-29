@@ -10,15 +10,11 @@ import cn.academy.event.ability.ReflectEvent;
 import cn.lambdalib2.util.RandUtils;
 import cn.paindar.academymonster.entity.datapart.MobSkillData;
 import cn.paindar.academymonster.events.RayShootingEvent;
-import cn.paindar.academymonster.network.NetworkManager;
-import net.minecraft.entity.EntityLiving;
 import net.minecraft.entity.monster.EntityMob;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
-import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 import static cn.lambdalib2.util.MathUtils.lerpf;
