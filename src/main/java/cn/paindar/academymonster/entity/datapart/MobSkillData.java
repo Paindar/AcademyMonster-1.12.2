@@ -4,166 +4,141 @@ import cn.academy.event.ability.CalcEvent;
 import cn.lambdalib2.datapart.DataPart;
 import cn.lambdalib2.datapart.EntityData;
 import cn.lambdalib2.datapart.RegDataPart;
+import cn.lambdalib2.registry.StateEventCallback;
 import cn.lambdalib2.registry.mc.RegEventHandler;
-import cn.lambdalib2.s11n.SerializeExcluded;
-import cn.lambdalib2.s11n.SerializeIncluded;
-import cn.lambdalib2.s11n.nbt.NBTS11n;
-import cn.paindar.academymonster.ability.BaseSkill;
-import cn.paindar.academymonster.core.AcademyMonster;
+import cn.lambdalib2.s11n.network.NetworkS11n;
+import cn.paindar.academymonster.api.INbt;
 import cn.paindar.academymonster.core.SkillManager;
-import cn.paindar.academymonster.entity.ai.EntityAIBaseX;
-import cn.paindar.academymonster.entity.ai.EntityAIWander;
+import cn.paindar.academymonster.network.MessageSyncMobInfo;
+import cn.paindar.academymonster.network.NetworkManager;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import net.minecraft.entity.monster.EntityMob;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
+import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Created by Paindar on 2017/2/15.
  */
 @RegDataPart(EntityMob.class)
-public class MobSkillData extends DataPart<EntityMob>
+public class MobSkillData extends DataPart<EntityMob> implements INbt
 {
     public static MobSkillData get(EntityMob e)
     {
         return EntityData.get(e).getPart(MobSkillData.class);
     }
+    @StateEventCallback
+    public static void onInit(FMLInitializationEvent evt)
+    {
+        NetworkS11n.addDirect(MobSkillData.class, new NetworkS11n.NetS11nAdaptor<MobSkillData>() {
+            @Override
+            public void write(ByteBuf buf, MobSkillData obj) {
+                obj.list.toBytes(buf);
+                NetworkS11n.serialize(buf, obj.level, false);
+                NetworkS11n.serialize(buf, obj.catalog.ordinal(), true);
+            }
 
-    @SerializeIncluded
-    private String skillData="";
-    @SerializeIncluded
+            @Override
+            public MobSkillData read(ByteBuf buf) throws NetworkS11n.ContextException {
+                MobSkillData data = new MobSkillData();
+                data.list.fromBytes(buf);
+                data.level = NetworkS11n.deserialize(buf);
+                int cat_id = NetworkS11n.deserialize(buf);
+                data.catalog = SkillManager.Catalog.values()[cat_id];
+                return data;
+            }
+        });
+    }
+    private final MonsterSkillList list = new MonsterSkillList();
     public int level=0;
-
-    @SerializeExcluded
-    public List<BaseSkill> list=new ArrayList<>();
-    @SerializeIncluded
-    public SkillManager.Catalog catalog;
-    @SerializeExcluded
-    private int time=0;
-    @SerializeExcluded
-    private EntityAIBaseX ai=null;
-    @SerializeExcluded
+    public SkillManager.Catalog catalog = SkillManager.Catalog.none;
     private boolean locked = false;
-    @SerializeExcluded
-    private double enchancement = 0.00;
+    private int interferTicks = 0;
+    private double enhancement = 0.00;
 
     public MobSkillData()
     {
         setTick(true);
         setNBTStorage();
-        setClientNeedSync();
     }
 
     @Override
-    public void tick()
-    {
-        time++;
-        for(BaseSkill skill :list)
+    public void tick() {
+        super.tick();
+        if(interferTicks>0)
+            interferTicks-=1;
+        list.tick(isInterfered());
+        if(!locked && isClient())
         {
-            skill.onTick();
+            MessageSyncMobInfo info = new MessageSyncMobInfo(getEntity(), null, 0,0);
+            NetworkManager.sendToServer(info);
+            locked = true;
         }
-        if(time>=10)
-        {
-            if(ai!=null)
-                ai.execute(getEntity());
-            time=0;
-        }
-
-    }
-
-    public void setSkillData(String data)
-    {
-        skillData=data;
     }
 
     // used for AIM Scanner's info sync.
-    public String getSkillData(){return skillData;}// used for AIM Scanner's info sync.
-
-    public void setAI(EntityAIBaseX ai)//update AI, fired in initialization and update AI action.
-    {
-        this.ai=ai;
-    }
-
+    public MonsterSkillList getSkillData(){return list;}
+    public void interfer(int ticks){interferTicks+=ticks;}
+    public boolean isInterfered(){return interferTicks>0;}
     @Override
     public void toNBT(NBTTagCompound tag) {
-        NBTS11n.write(tag, this);
+        //NBTS11n.write(tag, this);
+        NBTTagCompound nbt = new NBTTagCompound();
+        list.toNBT(nbt);
+        tag.setTag("list", nbt);
+        tag.setInteger("level", level);
+        tag.setInteger("cat", catalog.ordinal());
+        tag.setDouble("enh", enhancement);
     }
 
     @Override
     public void fromNBT(NBTTagCompound tag) {
-        NBTS11n.read(tag, this);
         if(!locked)
         {
+            list.fromNBT((NBTTagCompound) tag.getTag("list"));
+            level = tag.getInteger("level");
+            catalog = SkillManager.Catalog.values()[tag.getInteger("cat")];
+            enhancement = tag.getDouble("enh");
             init();
         }
     }
 
     public void init()
     {
+        //Data in client will be empty until server sync.
         if(getEntity().getEntityWorld().isRemote)
-            return;
-        String[] strList=skillData.split("-");
-        for(String name:strList)
         {
-            String[] skillInfo=name.split("~");
-            float exp;
-            if(skillInfo.length!=2)
-            {
-                continue;
-            }
-            try
-            {
-                exp=Float.parseFloat(skillInfo[1]);
-            }
-            catch(Exception e)
-            {
-                AcademyMonster.log.warn("Failed to translate "+getEntity() + " in "+skillInfo[0]+"  "+skillInfo[1]);
-                exp=0;
-            }
-            BaseSkill skill = SkillManager.instance.createSkillInstance(skillInfo[0], getEntity(), exp);
-            //SkillManager.instance.addSkillAI(skill,(EntityLiving) speller);
-            if(skill!=null)list.add(skill);
+            return;
         }
-        locked=true;
-        setAI(new EntityAIWander());
+        locked = true;
+        list.init();
+    }
+
+    @Override
+    public void onPlayerDead() {
+        super.onPlayerDead();
+        list.clear();
     }
 
     public boolean isLocked(){return locked;}
 
-    /**
-     * release all data about SEEP
-     */
-    public void clear()
+
+    private void clear()
     {
-        for(BaseSkill skill:list)
-        {
-            skill.clear();
-        }
         list.clear();
-        ai=null;
     }
 
-    public double getEnchancement() {
-        return enchancement;
+    public double getEnhancement() {
+        return enhancement;
     }
+
 
     public enum Events {
         @RegEventHandler()
         instance;
-
-        @SubscribeEvent
-        public void onMobDeath(LivingDeathEvent evt)
-        {
-            if (evt.getEntityLiving() instanceof EntityMob)
-            {
-                MobSkillData data =  MobSkillData.get((EntityMob) evt.getEntityLiving());
-                data.clear();
-            }
-        }
-
 
         @SubscribeEvent
         public void onPlayerCauseDamage(CalcEvent.SkillAttack evt)
@@ -171,7 +146,7 @@ public class MobSkillData extends DataPart<EntityMob>
             if(evt.target instanceof EntityMob)
             {
                 MobSkillData data = MobSkillData.get((EntityMob) evt.target);
-                evt.targetEnhancement = data.enchancement;
+                evt.targetEnhancement = data.enhancement;
             }
         }
     }

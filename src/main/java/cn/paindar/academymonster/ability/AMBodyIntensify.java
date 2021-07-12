@@ -1,60 +1,80 @@
 package cn.paindar.academymonster.ability;
 
-import cn.academy.ability.vanilla.electromaster.skill.BodyIntensify;
 import cn.academy.ability.vanilla.electromaster.skill.EMDamageHelper;
 import cn.lambdalib2.util.RandUtils;
+import cn.paindar.academymonster.ability.api.SpellingInfo;
+import cn.paindar.academymonster.ability.instance.MonsterSkillInstance;
+import io.netty.buffer.ByteBuf;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.monster.EntityCreeper;
-import net.minecraft.entity.monster.EntityMob;
 import net.minecraft.potion.PotionEffect;
 import scala.collection.immutable.Vector;
 
-import static cn.lambdalib2.util.MathUtils.lerpf;
 
+import static cn.lambdalib2.util.MathUtils.lerp;
 
-/**
- * Created by Paindar on 2017/2/10.
- */
-public class AMBodyIntensify extends BaseSkill
-{
-    public AMBodyIntensify(EntityMob speller, float exp)
-    {
-        super(speller, (int)lerpf(300, 200,exp), exp,"electromaster.body_intensify");
+public class AMBodyIntensify extends SkillTemplate {
+    public static final AMBodyIntensify Instance = new AMBodyIntensify();
+    protected AMBodyIntensify() {
+        super("body_intensify");
     }
 
-    private double getProbability()
-    {
-        return lerpf(1,2.5f,getSkillExp());
-    }
-    private int getBuffTime()
-    {
-        return (int)lerpf(40f,200f, getSkillExp());
-    }
-    private int getBuffLevel()
-    {
-        return getSkillExp()>0.5?2:1;
+    @Override
+    public MonsterSkillInstance create(Entity e) {
+        return new BodyIntensifyContext(e);
     }
 
-
-    public void spell()
+    @Override
+    public SpellingInfo fromBytes(ByteBuf buf) {
+        return null;
+    }
+    static class BodyIntensifyContext extends MonsterSkillInstance
     {
-        super.start();
-        double p = getProbability();
-        int time = getBuffTime();
-        int level=getBuffLevel();
-        Vector<PotionEffect> vector= BodyIntensify.effects();
-        if(speller instanceof EntityCreeper)
-        {
-            EMDamageHelper.powerCreeper((EntityCreeper) speller);
+        private final int cooldown;
+        public BodyIntensifyContext(Entity ent) {
+            super(AMBodyIntensify.Instance, ent);
+            cooldown = (int)lerp(300, 200, getExp());
         }
-        for(int i=0;i<vector.size();i++)
+        private double getProbability()
         {
-            if(RandUtils.ranged(0, 1+p)<p)
+            return lerp(1,2.5f,getExp());
+        }
+        private int getBuffTime()
+        {
+            return (int)lerp(40f,200f, getExp());
+        }
+        private int getBuffLevel()
+        {
+            return getExp()>0.5?2:1;
+        }
+        @Override
+        public int execute() {
+            double p = getProbability();
+            int time = getBuffTime();
+            int level=getBuffLevel();
+            Vector<PotionEffect> vector= cn.academy.ability.vanilla.electromaster.skill.BodyIntensify.effects();
+            if(speller instanceof EntityCreeper)
             {
-                speller.addPotionEffect(BodyIntensify.createEffect(vector.apply(i), level, time));
+                EMDamageHelper.powerCreeper((EntityCreeper) speller);
             }
+            else if(speller instanceof EntityLivingBase)
+            {
+                for(int i=0;i<vector.size();i++)
+                {
+                    if(RandUtils.ranged(0, 1+p)<p)
+                    {
+                        ((EntityLivingBase)speller).addPotionEffect(cn.academy.ability.vanilla.electromaster.skill.BodyIntensify.createEffect(vector.apply(i), level, time));
+                    }
+                }
+            }
+            setDisposed();
+            return cooldown;
         }
-        cooldown();
+
+        @Override
+        public void clear() {
+
+        }
     }
-
-
 }

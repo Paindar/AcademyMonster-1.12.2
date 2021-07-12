@@ -42,7 +42,7 @@ public class EntityMobMdBall extends EntityAdvanced {
 
     //Synced states
 
-    EntityMob spawner;
+    Entity spawner;
     float subX = 0, subY = 0, subZ = 0;
 
     //Ctor init data
@@ -59,15 +59,15 @@ public class EntityMobMdBall extends EntityAdvanced {
 
     double offsetX, offsetY, offsetZ;
 
-    public EntityMobMdBall(EntityMob player) {
+    public EntityMobMdBall(Entity player) {
         this(player, 2333333, null);
     }
 
-    public EntityMobMdBall(EntityMob player, int life) {
+    public EntityMobMdBall(Entity player, int life) {
         this(player, life, null);
     }
 
-    public EntityMobMdBall(EntityMob spawner, int life, final EntityCallback<EntityMobMdBall> callback) {
+    public EntityMobMdBall(Entity spawner, int life, final EntityCallback<EntityMobMdBall> callback) {
         super(spawner.getEntityWorld());
         this.spawner = spawner;
 
@@ -132,7 +132,7 @@ public class EntityMobMdBall extends EntityAdvanced {
                 int eid = this.dataManager.get(SPAWNER_ID);
                 Entity e = world.getEntityByID(eid);
                 if(e instanceof EntityMob) {
-                    spawner = (EntityMob) e;
+                    spawner = e;
                 }
 
             } else {
@@ -147,13 +147,17 @@ public class EntityMobMdBall extends EntityAdvanced {
             }
 
         } else {
-
-            updatePosition();
+            if(getSpawner()==null || getSpawner().isDead)
+            {
+                setDead();
+            }
+            else
+                updatePosition();
 
         }
     }
 
-    protected EntityMob getSpawner() {
+    protected Entity getSpawner() {
         return spawner;
     }
 

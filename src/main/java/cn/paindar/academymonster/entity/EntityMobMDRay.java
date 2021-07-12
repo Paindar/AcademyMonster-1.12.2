@@ -4,14 +4,13 @@ import cn.academy.client.render.entity.ray.RendererRayComposite;
 import cn.academy.client.render.particle.MdParticleFactory;
 import cn.academy.client.sound.ACSounds;
 import cn.lambdalib2.particle.Particle;
-import cn.lambdalib2.registry.mc.RegEntity;
 import cn.lambdalib2.registry.mc.RegEntityRender;
 import cn.lambdalib2.util.Colors;
 import cn.lambdalib2.util.MathUtils;
 import cn.lambdalib2.util.RandUtils;
 import cn.lambdalib2.util.VecUtils;
 import net.minecraft.client.renderer.entity.RenderManager;
-import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.Entity;
 import net.minecraft.util.SoundCategory;
 import net.minecraft.util.math.Vec3d;
 import net.minecraftforge.fml.relauncher.Side;
@@ -23,7 +22,7 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 @SideOnly(Side.CLIENT)
 public class EntityMobMDRay extends EntityRayBaseNative
 {
-    public EntityMobMDRay(EntityLivingBase spawner, Vec3d str, Vec3d end) {
+    public EntityMobMDRay(Entity spawner, Vec3d str, Vec3d end) {
         super(spawner);
         this.setFromTo(str, end);
         this.blendInTime = 0.2;

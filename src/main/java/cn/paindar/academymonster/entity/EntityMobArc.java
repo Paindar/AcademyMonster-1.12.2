@@ -1,7 +1,6 @@
 package cn.paindar.academymonster.entity;
 
 import cn.academy.client.render.util.ArcFactory;
-import cn.lambdalib2.registry.mc.RegEntity;
 import cn.lambdalib2.registry.mc.RegEntityRender;
 import cn.lambdalib2.util.EntityLook;
 import cn.lambdalib2.util.MathUtils;
@@ -9,6 +8,7 @@ import cn.lambdalib2.util.ViewOptimize;
 import cn.lambdalib2.util.entityx.EntityAdvanced;
 import net.minecraft.client.renderer.entity.Render;
 import net.minecraft.client.renderer.entity.RenderManager;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.ResourceLocation;
@@ -52,9 +52,9 @@ public class EntityMobArc extends EntityAdvanced
 
     public boolean viewOptimize = true;
 
-    EntityLivingBase speller;
+    Entity speller;
 
-    public EntityMobArc(EntityLivingBase speller, ArcFactory.Arc[]_patterns) {
+    public EntityMobArc(Entity speller, ArcFactory.Arc[]_patterns) {
         super(speller.world);
         this.speller = speller;
         this.setPosition(speller.posX, speller.posY + speller.getEyeHeight(), speller.posZ);
@@ -65,13 +65,14 @@ public class EntityMobArc extends EntityAdvanced
         this.patterns = _patterns;
     }
 
-    public EntityMobArc(EntityLivingBase _player) {
+    public EntityMobArc(Entity _player) {
         this(_player, defaultPatterns);
     }
 
     @Override
     public void onUpdate() {
         super.onUpdate();
+
         for(int i = 0; i < iid.length; ++i) {
             if(rand.nextDouble() < texWiggle)
                 iid[i] = rand.nextInt(patterns.length);

@@ -37,7 +37,7 @@ public class EntityMobCoinThrowing extends EntityAdvanced  implements IEntityAdd
     private float initHt;
     private double maxHt;
 
-    public EntityMob speller;
+    public Entity speller;
 
     public Vec3d axis;
     public boolean isSync = false;
@@ -46,7 +46,7 @@ public class EntityMobCoinThrowing extends EntityAdvanced  implements IEntityAdd
         super(world);
     }
 
-    public EntityMobCoinThrowing(EntityMob speller)
+    public EntityMobCoinThrowing(Entity speller)
     {
         super(speller.world);
         this.speller = speller;
@@ -160,12 +160,12 @@ public class EntityMobCoinThrowing extends EntityAdvanced  implements IEntityAdd
         public void doRender(Entity var1, double x, double y, double z,
                              float var8, float var9) {
             EntityMobCoinThrowing etc = (EntityMobCoinThrowing) var1;
-            EntityLivingBase player = etc.speller;
+            Entity speller = etc.speller;
             double dt = GameTimer.getTime();
-            if(player == null)
+            if(speller == null)
                 return;
             //If syncedSingle and in client computer, do not render
-            if(etc.posY < player.posY)
+            if(etc.posY < speller.posY)
                 return;
             GL11.glPushMatrix(); {
                 //x = player.posX - RenderManager.renderPosX;
@@ -174,7 +174,11 @@ public class EntityMobCoinThrowing extends EntityAdvanced  implements IEntityAdd
 
 
                 GL11.glTranslated(x, y, z);
-                GL11.glRotated(player.renderYawOffset, 0, -1, 0);
+                //getRenderYawOffset
+                if(speller instanceof EntityLivingBase)
+                    GL11.glRotated(((EntityLivingBase) speller).renderYawOffset, 0, -1, 0);
+                else
+                    GL11.glRotated(0, 0, -1, 0);
                 GL11.glTranslated(-0.63, -0.60, 0.30);
                 float scale = 0.3F;
                 GL11.glScalef(scale, scale, scale);

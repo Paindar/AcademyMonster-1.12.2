@@ -1,5 +1,6 @@
 package cn.paindar.academymonster.events;
 
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraftforge.fml.common.eventhandler.Event;
 
@@ -10,10 +11,10 @@ import net.minecraftforge.fml.common.eventhandler.Event;
  * Its range is how far skill can extend.
  */
 public class RayShootingEvent extends Event {
-    public final EntityLivingBase source;
+    public final Entity source;
     public final EntityLivingBase target;
     public double range;
-    public RayShootingEvent(EntityLivingBase source, EntityLivingBase target, double range){
+    public RayShootingEvent(Entity source, EntityLivingBase target, double range){
         this.source=source;
         this.target=target;
         this.range=range;

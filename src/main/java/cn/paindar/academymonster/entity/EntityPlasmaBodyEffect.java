@@ -9,12 +9,12 @@ import cn.lambdalib2.render.legacy.LegacyShaderProgram;
 import cn.lambdalib2.s11n.network.TargetPoints;
 import cn.lambdalib2.util.*;
 import cn.paindar.academymonster.ability.AMPlasmaCannon;
+import cn.paindar.academymonster.core.AcademyMonster;
 import cn.paindar.academymonster.network.NetworkManager;
 import net.minecraft.client.renderer.entity.Render;
 import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
-import net.minecraft.entity.monster.EntityMob;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.MathHelper;
@@ -45,11 +45,11 @@ public class EntityPlasmaBodyEffect extends Entity {
 
     boolean state = false;
     boolean flying = false;
-    EntityMob mob;
+    Entity mob;
     Vec3d delta;
     double initTime = GameTimer.getTime();
     float alpha = 0.0f;
-    private AMPlasmaCannon skill = null;
+    private AMPlasmaCannon.PlasmaCannonContext skill = null;
 
     static class TrigPar {
         public float amp;
@@ -85,10 +85,26 @@ public class EntityPlasmaBodyEffect extends Entity {
 
     public EntityPlasmaBodyEffect(World worldIn) {
         super(worldIn);
-
+        for (int i = 0; i < 4; i++) {
+            float rvf = rangef(-1.5f, 1.5f);
+            balls.add(new BallInst(rangef(1, 1.5f),
+                    new Vec3d(rvf, rvf, rvf),
+                    nextTrigPar(),
+                    nextTrigPar()));
+        }
+        int limit = RandUtils.nextInt(2) + 4;
+        for (int i = 0; i < limit; i++) {
+            float rvf = rangef(-3f, 3f);
+            balls.add(new BallInst(rangef(0.1f, 0.3f),
+                    new Vec3d(rvf, rvf, rvf),
+                    nextTrigPar(2.5f),
+                    nextTrigPar(2.5f)));
+        }
+        setSize(10, 10);
+        ignoreFrustumCheck = true;
     }
 
-    public EntityPlasmaBodyEffect(EntityMob mob, AMPlasmaCannon skill) {
+    public EntityPlasmaBodyEffect(Entity mob, AMPlasmaCannon.PlasmaCannonContext skill) {
         this(mob.world);
         this.mob = mob;
         this.skill = skill;
@@ -132,7 +148,7 @@ public class EntityPlasmaBodyEffect extends Entity {
                 .forEach((e) -> {
                     if (e instanceof EntityLivingBase) {
                         if (e != mob) {
-                            skill.attack((EntityLivingBase) e, rangef(0.8f, 1.2f) * lerpf(20, 45, skill.getSkillExp()));
+                            skill.attack((EntityLivingBase) e, rangef(0.8f, 1.2f) * lerpf(20, 45, (float) skill.getExp()),false);
                             e.hurtResistantTime = -1;
                         }
                     }
@@ -140,7 +156,7 @@ public class EntityPlasmaBodyEffect extends Entity {
 
         Explosion explosion = new Explosion(world, this,
                 posX, posY, posZ,
-                lerpf(12.0f, 15.0f, skill.getSkillExp()), false, true);
+                lerpf(12.0f, 15.0f, (float) skill.getExp()), false, true);
 
         if (AMPlasmaCannon.canDestroyBlock) {
             explosion.doExplosionA();
@@ -166,7 +182,9 @@ public class EntityPlasmaBodyEffect extends Entity {
                     EntitySelectors.living(), BlockSelectors.filNormal);
             if (result.typeOfHit != RayTraceResult.Type.MISS && !world.isRemote) {
                 explode();
-                NetworkManager.sendPlasmaStateChange(TargetPoints.convert(this, 20), this);
+                AMPlasmaCannon.AMPlasmaCannonClientInfo info = new AMPlasmaCannon.AMPlasmaCannonClientInfo();
+                info.e = this;
+                NetworkManager.sendSkillEventAllAround(TargetPoints.convert(this, 20), mob, AMPlasmaCannon.Instance, info);
             }
         }
         if (terminated && Math.abs(alpha) <= 1e-3f) {
@@ -180,7 +198,6 @@ public class EntityPlasmaBodyEffect extends Entity {
         int desiredAlpha = terminated ? 0 : 1;
 
         alpha = move(alpha, desiredAlpha, (float) (dt * (terminated ? 1f : 0.3f)));
-
         initTime = GameTimer.getTime();
     }
 

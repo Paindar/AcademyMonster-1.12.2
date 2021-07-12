@@ -1,23 +1,14 @@
 package cn.paindar.academymonster.core;
 
-import cn.lambdalib2.s11n.network.NetworkS11n;
 import cn.lambdalib2.util.RandUtils;
-import cn.lambdalib2.util.SideUtils;
 import cn.paindar.academymonster.ability.*;
 import cn.paindar.academymonster.config.AMConfig;
 import cn.paindar.academymonster.entity.datapart.MobSkillData;
-import io.netty.buffer.ByteBuf;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityLiving;
-import net.minecraft.entity.EntityLivingBase;
+import cn.paindar.academymonster.entity.datapart.MonsterSkillList;
+import net.minecraft.entity.EntityList;
 import net.minecraft.entity.monster.EntityMob;
-import net.minecraft.world.World;
-import net.minecraftforge.fml.common.network.ByteBufUtils;
 
-import java.lang.reflect.Constructor;
 import java.util.*;
-
-import static cn.lambdalib2.util.RandUtils.rangef;
 
 
 /**
@@ -25,9 +16,9 @@ import static cn.lambdalib2.util.RandUtils.rangef;
  */
 public class SkillManager
 {
-    class SkillInfo
+    static class SkillInfo
     {
-        Class<? extends BaseSkill> klass;
+        SkillTemplate template;
         float prob;
         int lvl;
         String name;
@@ -36,95 +27,60 @@ public class SkillManager
         @Override
         public String toString()
         {
-            return klass + " prob=" + prob +
-                     " level = " + lvl + " skill name = " + name +
-                    " catalog type = " + type + " at " + super.toString();
+            return String.format("skill_name: %s\nprob: %f\nlevel: %d\ncatalog:%s\n",
+                    template.getId(), prob, lvl, type);
         }
     }
-    public enum Catalog{vector,meltdown,electro,teleport}
+    public enum Catalog{none, vector,meltdown,electro,teleport}
     public static SkillManager instance=new SkillManager();
     private static List<SkillInfo> list=new ArrayList<>();
 
     private SkillManager(){}
 
-    public BaseSkill createSkillInstance(String skillName, EntityMob speller, float exp)
+    public SkillTemplate getSkillTemplate(String id)
     {
-        BaseSkill skill;
-        Class<? extends BaseSkill> skillClass=null;
-        for(SkillInfo info:list)
-        {
-            if(info.name.equals(skillName))
-            {
-                skillClass=info.klass;
-                break;
-            }
-        }
-        if(skillClass==null)
-            return null;
-        Constructor constructor;
-        try
-        {
-            constructor = skillClass.getConstructor(EntityMob.class, float.class);
-            skill = (BaseSkill) constructor.newInstance(speller,exp);
-            return skill;
-        }
-        catch(Exception e)
-        {
-            AcademyMonster.log.error("No such constructor: (EntityLivingBase.class, float.class)");
-            e.printStackTrace();
-        }
-        return null;
+        Optional<SkillInfo> ret = list.stream()
+                .filter((SkillInfo info)-> info.template.getId().equals(id))
+                .findAny();
+        return ret.map(skillInfo -> skillInfo.template).orElse(null);
     }
 
-    private void registerSkill(Class<? extends BaseSkill> skill,float defaultProb,int skillLevel,Catalog type)
+    private void registerSkill(SkillTemplate skill, float defaultProb, int skillLevel, Catalog type)
     {
-        float prob=(float) AMConfig.getDouble("am.skill."+skill.getSimpleName().substring(2)+".prob",defaultProb);
+        float prob=(float) AMConfig.getDouble("am.skill."+skill.getId()+".prob", defaultProb);
+        skillLevel = AMConfig.getInt("am.skill."+skill.getId()+".level", skillLevel);
         if (prob<=1e-6)
             return ;
         SkillInfo info=new SkillInfo();
-        info.klass=skill;
+        info.template=skill;
         info.prob=prob;
         info.lvl=skillLevel;
         info.type=type;
 
-        Constructor constructor;
-        BaseSkill scill;
-        try
-        {
-            constructor = skill.getConstructor(EntityMob.class, float.class);
-            scill = (BaseSkill) constructor.newInstance(null,0);
-            info.name=scill.getUnlocalizedSkillName();
-        }
-        catch(Exception e)
-        {
-            AcademyMonster.log.error("No such constructor: (EntityLivingBase.class, float.class)");
-            e.printStackTrace();
-        }
         list.add(info);
-        NetworkS11n.register(skill);
     }
 
     void initSkill()
     {
-        registerSkill(AMArcGen.class,1,1,Catalog.electro);
-        registerSkill(AMElectronBomb.class, 1,1,Catalog.meltdown);
-        registerSkill(AMBodyIntensify.class, 1,1,Catalog.electro);
+        registerSkill(AMArcGen.Instance,1,1,Catalog.electro);
+        registerSkill(AMElectronBomb.Instance, 1,1,Catalog.meltdown);
+        registerSkill(AMBodyIntensify.Instance, 1,1,Catalog.electro);
 
-        registerSkill(AMScatterBomb.class,0.5f,2,Catalog.meltdown);
-        registerSkill(AMGroundShock.class,0.5f,2,Catalog.vector);
-        registerSkill(AMPenetrateTeleport.class, 1,2,Catalog.teleport);
-        registerSkill(AMBloodRetrograde.class,0.8f,2,Catalog.vector);
+        registerSkill(AMScatterBomb.Instance,0.5f,2,Catalog.meltdown);
+        registerSkill(AMGroundShock.Instance,0.5f,2,Catalog.vector);
+        registerSkill(AMPenetrateTeleport.Instance, 1,2,Catalog.teleport);
+        registerSkill(AMBloodRetro.Instance,0.8f,2,Catalog.vector);
 
-        registerSkill(AMElectronCurtains.class,0.4f,3,Catalog.meltdown);
-        registerSkill(AMLocationTeleport.class,0.7f,3,Catalog.teleport);
-        registerSkill(AMThunderBolt.class,0.7f,3,Catalog.electro);
-        registerSkill(AMVecReflect.class, 0.3f,3,Catalog.vector);
-
-        registerSkill(AMRailgun.class, 0.2f,4,Catalog.electro);
-        registerSkill(AMThunderClap.class,0.4f,4,Catalog.electro);
-        registerSkill(AMPlasmaCannon.class,0.3f,4,Catalog.vector);
-        registerSkill(AMElectronMissile.class,0.8f,4,Catalog.meltdown);
-        registerSkill(AMLocManip.class,0.8f,4,Catalog.teleport);
+        registerSkill(AMElectronCurtains.Instance,0.4f,3,Catalog.meltdown);
+        registerSkill(AMLocationTeleport.Instance,0.7f,3,Catalog.teleport);
+        registerSkill(AMThunderBolt.Instance,0.7f,3,Catalog.electro);
+        registerSkill(AMVecReflect.Instance, 0.3f,3,Catalog.vector);
+//
+        registerSkill(AMRailgun.Instance, 0.2f,4,Catalog.electro);
+//        registerSkill(AMThunderClap.class,0.4f,4,Catalog.electro);//Being replaced with E.M.P.
+        registerSkill(AMPlasmaCannon.Instance,0.3f,4,Catalog.vector);
+        registerSkill(AMElectronMissile.Instance,0.8f,4,Catalog.meltdown);
+        registerSkill(AMLocManip.Instance,0.8f,4,Catalog.teleport);
         list.sort((a,b)->(a.lvl!=b.lvl?(a.lvl<b.lvl?-1:1):0));
         //list.sort((a,b)->(a.type!=b.type)?(a.type.ordinal()<b.type.ordinal()?-1:1):(a.lvl!=b.lvl?(a.lvl<b.lvl?-1:1):0));
     }
@@ -134,15 +90,14 @@ public class SkillManager
     {
         if(entity.getEntityWorld().isRemote)
             return;
-        List<String> banList=AMConfig.getStringArray("am.monster."+entity.getClass().getSimpleName()+".ban",new ArrayList<>());
-        StringBuilder builder=new StringBuilder();
+        List<String> banList=AMConfig.getStringArray("am.monster."+ EntityList.getEntityString(entity)+".ban",new ArrayList<>());
         {
             double prob=AMConfig.getDouble("am.skill.prob",0.3f);
             double factor=AMConfig.getDouble("am.skill.factor",0.5f);
             double sumWeight=0;
             MobSkillData data = MobSkillData.get(entity);
             data.catalog  = Catalog.values()[RandUtils.nextInt(Catalog.values().length)];
-            boolean isTest=false;
+            final boolean isTest=false;
 
             if(!isTest)
             {
@@ -158,7 +113,7 @@ public class SkillManager
                         for (; mark < list.size(); mark++)
                         {
                             info = list.get(mark);
-                            if (!banList.contains(info.klass.getSimpleName().substring(2)))
+                            if (!banList.contains(info.template.getId()))
                             {
                                 if (info.lvl == level)
                                 {
@@ -168,13 +123,14 @@ public class SkillManager
                                     break;
                             }
                         }
-                    }//flush available skill list
+                    }//select available skill list
                     if (filtList.isEmpty())
                     {
                         if (mark >= list.size())
                         {
                             break;
-                        } else
+                        }
+                        else
                         {
                             level++;
                             prob /= factor;
@@ -194,25 +150,24 @@ public class SkillManager
                         index++;
                     }
                     filtList.remove(index);
-                    sumWeight -= info.prob;
                     last = info.lvl;
                     if (info.lvl == level)
                         level++;
 
                     float randExp = RandUtils.nextFloat();
                     randExp = 0.01f + randExp * randExp;
-                    builder.append(info.name).append('~').append(randExp).append('-');
+                    data.getSkillData().add(info.template, randExp);
                     filtList.clear();
                     sumWeight=0;
                 }
-                data.setSkillData(builder.toString());
-                data.level = level - 1;
+                data.level = level;
             }
             else
             {
-                data.setSkillData("ac.ability.teleporter.threatening_teleport.name~1.00");
-                data.level=4;
-                data.catalog=Catalog.vector;
+                data.getSkillData().add(AMElectronBomb.Instance, 0.732);
+                data.getSkillData().add(AMElectronMissile.Instance, 0.732);
+                data.level=5;
+                data.catalog=Catalog.meltdown;
             }
         }
     }

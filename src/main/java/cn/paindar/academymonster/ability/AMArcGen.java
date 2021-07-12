@@ -1,64 +1,78 @@
 package cn.paindar.academymonster.ability;
 
+import cn.academy.client.render.util.ArcPatterns;
+import cn.academy.client.sound.ACSounds;
+import cn.lambdalib2.s11n.network.TargetPoints;
 import cn.lambdalib2.util.*;
+import cn.lambdalib2.util.entityx.handlers.Life;
+import cn.paindar.academymonster.ability.api.SpellingInfo;
+import cn.paindar.academymonster.ability.client.EffectSpawner;
+import cn.paindar.academymonster.ability.instance.MonsterSkillInstance;
+import cn.paindar.academymonster.entity.EntityMobArc;
 import cn.paindar.academymonster.network.NetworkManager;
+import io.netty.buffer.ByteBuf;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
-import net.minecraft.entity.monster.EntityMob;
-import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.init.Blocks;
 import net.minecraft.potion.Potion;
 import net.minecraft.potion.PotionEffect;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.SoundCategory;
 import net.minecraft.util.math.RayTraceResult;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.World;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 
-import java.util.List;
+import static cn.lambdalib2.util.MathUtils.lerp;
 
-import static cn.lambdalib2.util.MathUtils.lerpf;
-
-/**
- * Created by Paindar on 2017/2/17.
- */
-public class AMArcGen extends BaseSkill
-{
-    private float damage;
-    private float range ;
-    private float prob;
-    private float slowdown;
-    public AMArcGen(EntityMob speller, float exp)
-    {
-        super(speller, (int)lerpf(40,20,exp), exp,"electromaster.arc_gen");
-        damage=lerpf(1,7,exp);
-        range=lerpf(6,15,exp);
-        prob=lerpf(0,0.6f,exp);
-        slowdown=exp>0.5?lerpf(0,0.8f,exp-0.5f):0;
+public class AMArcGen extends SkillTemplate {
+    public static final AMArcGen Instance = new AMArcGen();
+    protected AMArcGen() {
+        super("arc");
+    }
+    @Override
+    public MonsterSkillInstance create(Entity e) {
+        return new ArcGenContext(e);
     }
 
-    public float getMaxDistance(){return range;}
-
-    private Vec3d getDest(EntityLivingBase speller){return Raytrace.getLookingPos(speller, range).getLeft();}
-
     @Override
-    public void start()
+    @SideOnly(Side.CLIENT)
+    public SpellingInfo fromBytes(ByteBuf buf) {
+        SpellingInfo info = new ArcGenClientInfo();
+        info.fromBytes(buf);
+        return info;
+    }
+    static class ArcGenContext extends MonsterSkillInstance
     {
-        super.start();
-        World world=speller.getEntityWorld();
-        RayTraceResult result=Raytrace.traceLiving(speller, range, EntitySelectors.living(), BlockSelectors.filNormal);
-        switch(result.typeOfHit)
+        private final double damage;
+        private final double range ;
+        private final double prob;//burning prob
+        private final double slowdown;
+        private final int cooldown;
+
+        public ArcGenContext(Entity ent) {
+            super(Instance, ent);
+            damage=lerp(1.,7., getExp());
+            range=lerp(6,15,getExp());
+            prob=lerp(0,0.6f,getExp());
+            slowdown= getExp()>0.5?lerp(0,0.8,getExp()-0.5):0;
+            cooldown = (int)lerp(40,20,getExp());
+        }
+
+        @Override
+        public int execute()
         {
-            case ENTITY:
-                if (result.entityHit instanceof EntityLivingBase)
-                {
-                    EntityLivingBase target = (EntityLivingBase) result.entityHit;
-                    attack(target, damage);
-                    if (RandUtils.nextDouble() <= slowdown)
+            RayTraceResult result=Raytrace.traceLiving(speller, range, EntitySelectors.living(), BlockSelectors.filNormal);
+            switch(result.typeOfHit)
+            {
+                case ENTITY:
+                    if (result.entityHit instanceof EntityLivingBase)
                     {
-                        target.addPotionEffect(new PotionEffect(Potion.getPotionFromResourceLocation("slowness"), 10));
+                        EntityLivingBase target = (EntityLivingBase) result.entityHit;
+                        attack(target, damage,false);
+                        if (RandUtils.nextDouble() <= slowdown)
+                        {
+                            target.addPotionEffect(new PotionEffect(Potion.getPotionFromResourceLocation("slowness"), 10));
+                        }
                     }
-                }
-                break;
+                    break;
             /*case BLOCK:
                 if(getSkillExp()>=0.4)
                 {
@@ -72,12 +86,45 @@ public class AMArcGen extends BaseSkill
                     }
                 }
                 break;*/
+            }
+            ArcGenClientInfo info = new ArcGenClientInfo();
+            info.range = range;
+            NetworkManager.sendSkillEventAllAround(TargetPoints.convert(speller, 25), speller, Instance, info);
+            setDisposed();
+            return cooldown;
         }
-        List<Entity> list= WorldUtils.getEntities(speller, 25, EntitySelectors.player());
-        for(Entity e:list)
-        {
-            NetworkManager.sendArcGenTo(speller,range,(EntityPlayerMP)e);
+
+        @Override
+        public void clear() { }
+    }
+
+    static class ArcGenClientInfo extends SpellingInfo
+    {
+        double range;
+        @Override
+        public void fromBytes(ByteBuf buf) {
+            range = buf.readDouble();
         }
-        cooldown();
+
+        @Override
+        public void toBytes(ByteBuf buf) {
+            buf.writeDouble(range);
+        }
+
+        @Override
+        @SideOnly(Side.CLIENT)
+        public void action(Entity speller) {
+            EntityMobArc arc = new EntityMobArc(speller, ArcPatterns.weakArc);
+            arc.texWiggle = 0.7;
+            arc.showWiggle = 0.1;
+            arc.hideWiggle = 0.4;
+            arc.addMotionHandler(new Life(10));
+            arc.lengthFixed = false;
+            arc.length = range;
+            EffectSpawner.Instance.addEffect(arc);
+            //speller.world.spawnEntity(arc);
+            ACSounds.playClient(speller, "em.arc_weak", SoundCategory.HOSTILE, .5f);
+
+        }
     }
 }

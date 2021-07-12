@@ -20,8 +20,11 @@ import cn.lambdalib2.util.EntitySelectors;
 import cn.lambdalib2.util.HudUtils;
 import cn.lambdalib2.util.Raytrace;
 import cn.lambdalib2.util.RenderUtils;
+import cn.paindar.academymonster.ability.SkillTemplate;
+import cn.paindar.academymonster.core.SkillManager;
 import cn.paindar.academymonster.core.support.terminal.AppAIMScanner;
 import cn.paindar.academymonster.entity.datapart.MobSkillData;
+import cn.paindar.academymonster.entity.datapart.MonsterSkillList;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.client.gui.ScaledResolution;
@@ -35,6 +38,7 @@ import net.minecraft.util.text.translation.I18n;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
+import org.apache.logging.log4j.core.util.KeyValuePair;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.util.Color;
@@ -43,6 +47,8 @@ import org.lwjgl.util.glu.GLU;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by Paindar on 2017/2/13.
@@ -202,29 +208,21 @@ public class AIMScannerUI extends AuxGui
                 }
                 else if(focus instanceof EntityMob)
                 {
-                    root.getWidget("monsterName").getComponent(TextBox.class).setContent(focus.getName());
-                    String skill = MobSkillData.get((EntityMob) focus).getSkillData();
-                    if (skill != null)
+                    MobSkillData data = MobSkillData.get((EntityMob) focus);
+                    root.getWidget("monsterName")
+                            .getComponent(TextBox.class)
+                            .setContent(String.format("%s", focus.getName()));
+                    MonsterSkillList skills = data.getSkillData();
+                    Widget list = root.getWidget("skill");
+                    int num = 1;
+                    for(SkillTemplate skill : skills.getSkills())
                     {
-                        String[] skillName = skill.split("-");
-                        Widget list = root.getWidget("skill");
-                        int num = 1;
-                        for (String item : skillName)
-                        {
-                            String[] data = item.split("~");
-
-                            Widget widget = skillItem.copy().pos(30, 30 * num);
-                            num++;
-                            if (data.length == 2)
-                            {
-                                widget.getComponent(TextBox.class).setContent(I18n.translateToLocal(data[0]) );//+ String.format("(%.4f)", Float.parseFloat(data[1]))
-                            } else if (data.length == 1)
-                                widget.getComponent(TextBox.class).setContent(I18n.translateToLocal(data[0]));// + ("(0.00)")
-                            else
-                                continue;
-                            existedList.add(widget);
-                            list.addWidget(widget);
-                        }
+                        Widget widget = skillItem.copy().pos(30, 30 * num);
+                        num++;
+                        widget.getComponent(TextBox.class)
+                                .setContent(skill.getSkillName());
+                        existedList.add(widget);
+                        list.addWidget(widget);
                     }
                 }
             }

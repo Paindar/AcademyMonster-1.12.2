@@ -3,6 +3,7 @@ package cn.paindar.academymonster.core;
 import cn.academy.client.render.util.ArcPatterns;
 import cn.paindar.academymonster.core.support.terminal.ui.AIMScannerUI;
 import cn.paindar.academymonster.entity.EntityMobArc;
+import cn.paindar.academymonster.entity.EntityRailgunFXNative;
 import net.minecraftforge.fml.common.event.*;
 
 /**
@@ -16,7 +17,8 @@ public class ClientProxy extends CommonProxy
         super.preInit(event);
         //BossHealthBar.preInit();
         EntityMobArc.defaultPatternsInit();
-        AcademyMonster.log.info("Init arc patterns, size "+ ArcPatterns.weakArc.length);
+        AcademyMonster.log.debug("Init Academy.client.arcPatterns, size = "+ArcPatterns.aoeArc.length);
+        AcademyMonster.log.debug("Init EntityRailgunFXNative.templates, size = "+ EntityRailgunFXNative.templates.length);
     }
 
     @Override

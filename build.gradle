@@ -29,7 +29,7 @@ compileJava {
 }
 
 minecraft {
-    version = "1.12.2-14.23.5.2768"
+    version = "1.12.2-14.23.5.2847"
     runDir = "run"
     
     // the mappings can be changed at any time, and must be in the following format.
@@ -72,7 +72,7 @@ repositories {
 }
 
 dependencies {
-    deobfCompile "cn.academy:AcademyCraft:${config.academy_ver}"
+    deobfCompile "cn.academy:AcademyCraft Unofficial:${config.academy_ver}"
     // you may put jars on which you depend on in ./libs
     // or you may define them like so..
     //compile "some.group:artifact:version:classifier"

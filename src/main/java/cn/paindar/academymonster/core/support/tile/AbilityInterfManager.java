@@ -21,13 +21,13 @@ import java.util.*;
 public class AbilityInterfManager
 {
     private Set<Entity> affectEntity=new LinkedHashSet<>();
-    private int maxTick=5;
+    public static final int MaxTick =5;
     private int tick=0;
     public static AbilityInterfManager instance=new AbilityInterfManager();
     @SubscribeEvent
     public void onTick(TickEvent.ServerTickEvent event)
     {
-        if(event.phase == TickEvent.Phase.START && tick++==maxTick)
+        if(event.phase == TickEvent.Phase.START && tick++== MaxTick)
         {
             update();
             tick=0;

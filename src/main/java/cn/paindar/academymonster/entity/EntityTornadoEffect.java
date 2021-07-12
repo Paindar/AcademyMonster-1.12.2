@@ -7,7 +7,6 @@ import cn.lambdalib2.registry.mc.RegEntityRender;
 import cn.lambdalib2.util.EntitySelectors;
 import cn.lambdalib2.util.Raytrace;
 import cn.lambdalib2.util.VecUtils;
-import cn.paindar.academymonster.ability.BaseSkill;
 import net.minecraft.client.renderer.entity.Render;
 import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.entity.Entity;
@@ -29,14 +28,14 @@ public class EntityTornadoEffect extends Entity {
 
     boolean dead = false;
     int deadTick = 0;
-    EntityMob mob;
+    Entity mob;
     boolean state = false;
 
     public EntityTornadoEffect(World worldIn) {
         super(worldIn);
     }
 
-    public EntityTornadoEffect(World world, EntityMob mob) {
+    public EntityTornadoEffect(World world, Entity mob) {
         this(world);
         this.mob = mob;
         Vec3d initPos = null;

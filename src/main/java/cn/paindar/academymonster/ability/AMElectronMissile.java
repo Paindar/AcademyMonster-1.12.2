@@ -1,106 +1,173 @@
 package cn.paindar.academymonster.ability;
 
+import cn.lambdalib2.s11n.network.NetworkS11n;
+import cn.lambdalib2.s11n.network.TargetPoints;
 import cn.lambdalib2.util.EntitySelectors;
 import cn.lambdalib2.util.Raytrace;
-import cn.lambdalib2.util.VecUtils;
 import cn.lambdalib2.util.WorldUtils;
+import cn.paindar.academymonster.ability.api.SpellingInfo;
+import cn.paindar.academymonster.ability.client.EffectSpawner;
+import cn.paindar.academymonster.ability.instance.MonsterSkillInstance;
+import cn.paindar.academymonster.core.AcademyMonster;
+import cn.paindar.academymonster.entity.EntityMobMDRay;
 import cn.paindar.academymonster.entity.EntityMobMdBall;
+import cn.paindar.academymonster.entity.datapart.MobSkillData;
 import cn.paindar.academymonster.network.NetworkManager;
+import io.netty.buffer.ByteBuf;
+import net.minecraft.block.Block;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.monster.EntityMob;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.potion.Potion;
 import net.minecraft.potion.PotionEffect;
 import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.util.math.Vec3d;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
-import static cn.lambdalib2.util.MathUtils.lerpf;
+import static cn.lambdalib2.util.MathUtils.lerp;
 
-/**
- * Created by Paindar on 2017/3/12.
- */
-public class AMElectronMissile extends BaseSkill
+public class AMElectronMissile extends SkillTemplate
 {
-    private List<EntityMobMdBall> ballList=new ArrayList<>();
-    private final int freq;
-    private final int maxTick;
-    private final float range;
-    private final float damage;
-    private int time;
-    public AMElectronMissile(EntityMob speller, float exp)
+    public static final AMElectronMissile Instance = new AMElectronMissile();
+    protected AMElectronMissile()
     {
-        super(speller, (int)lerpf(800,400,exp), exp, "meltdowner.electron_missile");
-        freq=(int)lerpf(20,10,exp);
-        maxTick=(int)lerpf(100,200,exp);
-        range=(int)lerpf(8,12,exp);
-        damage=lerpf(5,12,exp);
+        super("electron_missile");
+    }
+    @Override
+    public MonsterSkillInstance create(Entity e) {
+        return new ElectronMissileContext(e);
     }
 
     @Override
-    public void start()
-    {
-        super.start();
-        time=0;
-        speller.addPotionEffect(new PotionEffect(Potion.getPotionFromResourceLocation("speed"), maxTick, 2));
+    public SpellingInfo fromBytes(ByteBuf buf) {
+        SpellingInfo info = new ElectronMissileClientInfo();
+        info.fromBytes(buf);
+        return info;
     }
-
-    @Override
-    public void onTick()
+    static class ElectronMissileContext extends MonsterSkillInstance
     {
-        super.onTick();
-        if(!isActivated())
-            return;
-        time++;
-        if(time%freq==0)
+        private final List<EntityMobMdBall> ballList=new ArrayList<>();
+        private final int freq;
+        private final int maxTick;
+        private final float range;
+        private final double damage;
+        private int time;
+        private final int cooldown;
+        public ElectronMissileContext(Entity e)
         {
-            EntityMobMdBall ball=new EntityMobMdBall(speller,2333333);
-            speller.world.spawnEntity(ball);
-            ballList.add(ball);
+            super(Instance, e);
+            freq=(int)lerp(20,10,getExp());
+            maxTick=(int)lerp(100,200,getExp());
+            range=(int)lerp(8,12,getExp());
+            damage=lerp(5,12,getExp());
+            cooldown = (int)lerp(800,400,getExp());
         }
 
-        if( !ballList.isEmpty())
-        {
-            List<Entity> list= WorldUtils.getEntities(speller,range, EntitySelectors.exclude(speller).
-                    and(EntitySelectors.living()).
-                    and((Entity e)-> !(e instanceof EntityPlayer && ((EntityPlayer) e).capabilities.isCreativeMode)));
-            if(!list.isEmpty())
+        @Override
+        public int execute() {
+            time=0;
+            if(speller instanceof EntityLivingBase)
             {
-                Vec3d str= new Vec3d(ballList.get(0).posX, ballList.get(0).posY, ballList.get(0).posZ);
-                Vec3d dst= VecUtils.lookingPos(list.get(0),5);
-                RayTraceResult trace = Raytrace.perform(speller.world, str,dst
-                        , EntitySelectors.exclude(speller).and(EntitySelectors.living()));
-                if (trace.typeOfHit == RayTraceResult.Type.ENTITY)
-                {
-                    attack((EntityLivingBase) trace.entityHit,damage);
-                }
-
-                list= WorldUtils.getEntities(speller, 25, EntitySelectors.player());
-                for(Entity e:list)
-                {
-                    NetworkManager.sendMdRayEffectTo(str,dst,speller, (EntityPlayerMP)e);
-                }
-                ballList.get(0).setDead();
-                ballList.remove(0);
+                ((EntityLivingBase) speller).addPotionEffect(new PotionEffect(
+                        Objects.requireNonNull(Potion.getPotionFromResourceLocation("speed")), maxTick, 2));
             }
+            return WAITING;
         }
-        if (time>=maxTick)
-            cooldown();
-
-    }
-
-    public float getMaxDistance(){return range;}
-
-    @Override
-    public void clear() {
-        super.clear();
-        for(EntityMobMdBall ball:ballList)
+        @Override
+        public void tick()
         {
-            ball.setDead();
+            time++;
+            if(speller.isDead)
+            {
+                clear();
+                return;
+            }
+            if(time%freq==0)
+            {
+                EntityMobMdBall ball=new EntityMobMdBall(speller,2333333);
+                speller.world.spawnEntity(ball);
+                ballList.add(ball);
+
+            }
+
+            if( !ballList.isEmpty())
+            {
+                List<Entity> list= WorldUtils.getEntities(speller,range, EntitySelectors.exclude(speller).
+                        and(EntitySelectors.living()).
+                        and((Entity e)-> !(e instanceof EntityPlayer && ((EntityPlayer) e).capabilities.isCreativeMode)));
+
+                if(!list.isEmpty())
+                {
+                    Entity ball = ballList.get(0);
+                    for(Entity targ : list)
+                    {
+                        Vec3d str= ball.getPositionEyes(1f);
+                        Vec3d dst= targ.getPositionEyes(1f);
+                        RayTraceResult trace = Raytrace.perform(speller.world, str,dst
+                                , EntitySelectors.exclude(speller).and(EntitySelectors.living()));
+                        if (trace.typeOfHit == RayTraceResult.Type.ENTITY)
+                        {
+                            attack((EntityLivingBase) trace.entityHit,damage,false);
+                            ElectronMissileClientInfo info = new ElectronMissileClientInfo();
+                            info.str = str;
+                            info.end = dst;
+                            NetworkManager.sendSkillEventAllAround(TargetPoints.convert(speller, 19),speller, Instance, info);
+                            ball.setDead();
+                            ballList.remove(0);
+                            break;
+                        }
+//                        else if (trace.typeOfHit == RayTraceResult.Type.BLOCK)
+//                        {
+//                            IBlockState ibs = speller.world.getBlockState(trace.getBlockPos());
+//
+//                        }
+                    }
+                }
+            }
+            if (time>=maxTick)
+                clear();
+        }
+
+        @Override
+        public void clear() {
+            setDisposed();
+            MobSkillData.get((EntityMob) speller).getSkillData().setCooldown(template, cooldown);
+            for(EntityMobMdBall ball:ballList)
+            {
+                ball.setDead();
+            }
+            ballList.clear();
+        }
+    }
+    static class ElectronMissileClientInfo extends SpellingInfo
+    {
+        Vec3d str, end;
+        @Override
+        @SideOnly(Side.CLIENT)
+        public void action(Entity speller) {
+            EntityMobMDRay raySmall  = new EntityMobMDRay(speller, str, end);
+            raySmall.viewOptimize = false;
+            //speller.world.spawnEntity(raySmall);
+            EffectSpawner.Instance.addEffect(raySmall);
+        }
+
+        @Override
+        public void fromBytes(ByteBuf buf) {
+            str = NetworkS11n.deserialize(buf);
+            end = NetworkS11n.deserialize(buf);
+        }
+
+        @Override
+        public void toBytes(ByteBuf buf) {
+            NetworkS11n.serialize(buf, str, false);
+            NetworkS11n.serialize(buf, end, false);
         }
     }
 }

@@ -1,11 +1,9 @@
 package cn.paindar.academymonster.ability.api.event;
 
-import cn.academy.event.ability.CalcEvent;
 import cn.academy.item.armor.ACArmorHelper;
-import cn.paindar.academymonster.ability.BaseSkill;
+import cn.paindar.academymonster.ability.SkillTemplate;
 import cn.paindar.academymonster.entity.datapart.MobSkillData;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.monster.EntityMob;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraftforge.common.MinecraftForge;
@@ -28,19 +26,19 @@ public class CalcEventMob<T> extends Event {
         this.mob = mob;
     }
 
-    public static class MobSkillAttack extends CalcEventMob<Float> {
+    public static class MobSkillAttack extends CalcEventMob<Double> {
 
-        public final BaseSkill skill;
+        public final SkillTemplate skill;
         public final Entity target;
         public double sourceEnhancement=0, targetEnhancement=0;
 
-        public MobSkillAttack(EntityMob mob, BaseSkill _skill, Entity _target, float initial) {
+        public MobSkillAttack(EntityMob mob, SkillTemplate _skill, Entity _target, double initial) {
             super(mob, initial);
             skill = _skill;
             target = _target;
             if(_target instanceof EntityPlayer)
             {
-                sourceEnhancement = MobSkillData.get(mob).getEnchancement();
+                sourceEnhancement = MobSkillData.get(mob).getEnhancement();
                 targetEnhancement = ACArmorHelper.instance.getEntityEnhancement((EntityPlayer) _target);
             }
         }

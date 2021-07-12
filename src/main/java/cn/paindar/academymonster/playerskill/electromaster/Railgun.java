@@ -210,10 +210,8 @@ public class Railgun extends Skill {
                             RayShootingEvent event = new RayShootingEvent(player, (EntityLivingBase) e, incr_);
                             boolean result = MinecraftForge.EVENT_BUS.post(event);
                             incr_=event.range;
-                            AcademyMonster.log.info("try attack "+e.getName());
                             if (!result) {
                                 ctx.attack(e, dmg);
-                                AcademyMonster.log.info("attack "+e.getName()+", damage = "+dmg);
                             }
                             else {
                                 incr_ -= (e.getDistanceSq(lastEntity));

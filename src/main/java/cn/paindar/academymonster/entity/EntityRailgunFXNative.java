@@ -9,7 +9,6 @@ import cn.lambdalib2.util.MathUtils;
 import cn.lambdalib2.util.RandUtils;
 import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.SoundCategory;
 import net.minecraft.util.SoundEvent;
@@ -29,7 +28,7 @@ public class EntityRailgunFXNative extends EntityRayBaseNative
     static final int ARC_SIZE = 15;
 
 
-    static ArcFactory.Arc[] templates;
+    public static ArcFactory.Arc[] templates;
     static {
         ArcFactory factory = new ArcFactory();
         factory.widthShrink = 0.9;
@@ -46,7 +45,7 @@ public class EntityRailgunFXNative extends EntityRayBaseNative
 
     SubArcHandler arcHandler = new SubArcHandler(templates);
 
-    public EntityRailgunFXNative(EntityLivingBase player, Vec3d str, Vec3d end) {
+    public EntityRailgunFXNative(Entity player, Vec3d str, Vec3d end) {
         super(player);
         //new Motion3D(player, true).applyToEntity(this);
         posX=player.posX;

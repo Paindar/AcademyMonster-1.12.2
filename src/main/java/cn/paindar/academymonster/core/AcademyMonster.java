@@ -16,7 +16,7 @@ import org.apache.logging.log4j.Logger;
  */
 
 @Mod(modid =AcademyMonster.MODID , name = AcademyMonster.NAME, version = AcademyMonster.VERSION,
-        dependencies = "required-after:academy@@AC_VERSION@") // LambdaLib is currently unstable. Supports only one version.
+        dependencies = "required-after:academycraft_unofficial@@AC_VERSION@") // LambdaLib is currently unstable. Supports only one version.
 @RegistryMod(rootPackage = "cn.paindar.", resourceDomain = "academymonster")
 public class AcademyMonster
 {

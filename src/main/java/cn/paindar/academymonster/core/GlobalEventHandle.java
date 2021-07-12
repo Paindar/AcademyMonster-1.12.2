@@ -8,13 +8,16 @@ import cn.academy.datapart.AbilityData;
 import cn.academy.datapart.CPData;
 import cn.academy.event.ability.ReflectEvent;
 import cn.lambdalib2.util.RandUtils;
+import cn.paindar.academymonster.entity.ai.EntityAISpellSkills;
 import cn.paindar.academymonster.entity.datapart.MobSkillData;
 import cn.paindar.academymonster.events.RayShootingEvent;
 import net.minecraft.entity.monster.EntityMob;
+import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
+import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 import static cn.lambdalib2.util.MathUtils.lerpf;
@@ -30,6 +33,14 @@ public class GlobalEventHandle
     {
     }
 
+    @SubscribeEvent
+    public void onEntityHurt(LivingHurtEvent evt)
+    {
+        if (evt.getEntity() instanceof EntityVillager)
+        {
+            evt.setAmount(0);
+        }
+    }
 
     @SubscribeEvent
     public void onEntityJoinedWorld(EntityJoinWorldEvent event)
@@ -42,6 +53,10 @@ public class GlobalEventHandle
             {
                 SkillManager.instance.addSkill(entity);
                 data.init();
+            }
+            if(data.getSkillData().getSkills().length>0)
+            {
+                entity.tasks.addTask(2, new EntityAISpellSkills(entity,entity.getAIMoveSpeed(),10,20F));
             }
         }
     }
@@ -66,12 +81,13 @@ public class GlobalEventHandle
             return;
         EntityMob theDead=(EntityMob)event.getEntityLiving();
         MobSkillData data=MobSkillData.get(theDead);
-        if(data.level>=3)
+        data.onPlayerDead();
+                if(data.level>=4)
         {
             switch(data.catalog)
             {
                 case electro:
-                    if(RandUtils.nextFloat()<=-0.35+data.level*0.15)
+                    if(RandUtils.nextFloat()<=-0.45+data.level*0.15)
                         theDead.entityDropItem(ACItems.induction_factor.create(VanillaCategories.electromaster),1);
                     break;
                 case meltdown:

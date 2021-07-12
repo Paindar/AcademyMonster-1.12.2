@@ -18,7 +18,7 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 public class EntityRayBaseNative extends EntityAdvanced implements IRay
 {
 
-    EntityLivingBase spawner;
+    Entity spawner;
 
     public int life = 30;
 
@@ -45,7 +45,7 @@ public class EntityRayBaseNative extends EntityAdvanced implements IRay
     /**
      * This just link the ray to a player. You still have to setup the view direction based on the ray type.
      */
-    public EntityRayBaseNative(EntityLivingBase player) {
+    public EntityRayBaseNative(Entity player) {
         this(player.world);
         spawner = player;
     }
