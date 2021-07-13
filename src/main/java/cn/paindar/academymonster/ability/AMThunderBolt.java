@@ -24,6 +24,7 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
 
@@ -94,17 +95,18 @@ public class AMThunderBolt extends SkillTemplate{
                 }
             }
 
+            List<Vec3d> eVec = new ArrayList<>();
             for(Entity e:aoes)
             {
                 attack((EntityLivingBase) e, aoeDamage,false);
-
+                eVec.add(e.getPositionEyes(0.7f));
                 if (getExp() > 0.2 && RandUtils.ranged(0, 1) < 0.8)
                 {
                     ((EntityLivingBase)e).addPotionEffect(new PotionEffect(Potion.getPotionFromResourceLocation("slowness"), 20, 3));
                 }
             }
             ThunderBoltClientInfo info = new ThunderBoltClientInfo();
-            info.aoes = aoes;
+            info.aoes = eVec;
             info.end = end;
             NetworkManager.sendSkillEventAllAround(TargetPoints.convert(speller, 20),
                     speller, Instance, info);
@@ -119,7 +121,7 @@ public class AMThunderBolt extends SkillTemplate{
     }
     static class ThunderBoltClientInfo extends SpellingInfo
     {
-        List<Entity> aoes;
+        List<Vec3d> aoes;
         Vec3d end;
         @Override
         @SideOnly(Side.CLIENT)
@@ -133,12 +135,12 @@ public class AMThunderBolt extends SkillTemplate{
                 EffectSpawner.Instance.addEffect(mainArc);
             }
 
-            for(Entity e:aoes)
+            for(Vec3d e:aoes)
             {
                 EntityMobArc aoeArc = new EntityMobArc(speller, ArcPatterns.aoeArc);
                 aoeArc.lengthFixed = false;
                 aoeArc.setFromTo(end.x, end.y,end.z,
-                        e.posX, e.posY + e.getEyeHeight(), e.posZ);
+                        e.x, e.y, e.z);
                 aoeArc.addMotionHandler(new Life(RandUtils.rangei(15, 25)));
                 //speller.world.spawnEntity(aoeArc);
                 EffectSpawner.Instance.addEffect(aoeArc);

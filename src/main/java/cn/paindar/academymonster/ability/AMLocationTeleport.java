@@ -108,7 +108,8 @@ public class AMLocationTeleport extends SkillTemplate{
     {
         @Override
         public void action(Entity speller) {
-            ACSounds.playClient(speller, "tp.tp", SoundCategory.HOSTILE, .5f);
+            ACSounds.playClient(speller.world, speller.posX, speller.posY, speller.posZ, "tp.tp",
+                    SoundCategory.HOSTILE, .5f, 1f);
         }
 
         @Override

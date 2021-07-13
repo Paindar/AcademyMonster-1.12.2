@@ -93,7 +93,8 @@ public class AMBloodRetro extends SkillTemplate {
         public void action(Entity speller) {
             if(target==null)
                 return;
-            ACSounds.playClient(target, "tp.guts", SoundCategory.HOSTILE, 0.6f);
+            ACSounds.playClient(speller.world, target.posX, target.posY, target.posZ, "tp.guts",
+                    SoundCategory.HOSTILE, .6f, 1f);
             for(int i = 0; i< RandUtils.rangei(4, 6); i++)
             {
                 double y = target.posY + RandUtils.ranged(0, 1) * target.height;

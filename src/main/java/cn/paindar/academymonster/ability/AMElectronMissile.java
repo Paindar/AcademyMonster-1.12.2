@@ -114,13 +114,13 @@ public class AMElectronMissile extends SkillTemplate
                                 , EntitySelectors.exclude(speller).and(EntitySelectors.living()));
                         if (trace.typeOfHit == RayTraceResult.Type.ENTITY)
                         {
+                            ballList.remove(0);
                             attack((EntityLivingBase) trace.entityHit,damage,false);
                             ElectronMissileClientInfo info = new ElectronMissileClientInfo();
                             info.str = str;
                             info.end = dst;
                             NetworkManager.sendSkillEventAllAround(TargetPoints.convert(speller, 19),speller, Instance, info);
                             ball.setDead();
-                            ballList.remove(0);
                             break;
                         }
 //                        else if (trace.typeOfHit == RayTraceResult.Type.BLOCK)
@@ -139,6 +139,7 @@ public class AMElectronMissile extends SkillTemplate
         public void clear() {
             setDisposed();
             MobSkillData.get((EntityMob) speller).getSkillData().setCooldown(template, cooldown);
+
             for(EntityMobMdBall ball:ballList)
             {
                 ball.setDead();

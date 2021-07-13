@@ -283,7 +283,8 @@ public class AMRailgun extends SkillTemplate {
             switch(stage)
             {
                 case THROW:
-                    ACSounds.playClient(speller, "entity.flipcoin", SoundCategory.HOSTILE,.5F);
+                    ACSounds.playClient(speller.world, speller.posX, speller.posY, speller.posZ, "entity.flipcoin",
+                            SoundCategory.HOSTILE, .5f, 1f);
                     break;
                 case FIRE:
                     //speller.world.spawnEntity(new EntityRailgunFXNative(speller, str, end));

@@ -123,7 +123,8 @@ public class AMArcGen extends SkillTemplate {
             arc.length = range;
             EffectSpawner.Instance.addEffect(arc);
             //speller.world.spawnEntity(arc);
-            ACSounds.playClient(speller, "em.arc_weak", SoundCategory.HOSTILE, .5f);
+            ACSounds.playClient(speller.world,speller.posX, speller.posY, speller.posZ, "em.arc_weak",
+                    SoundCategory.HOSTILE, .5f, 1f);
 
         }
     }
