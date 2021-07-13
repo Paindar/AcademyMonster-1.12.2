@@ -33,14 +33,14 @@ public class GlobalEventHandle
     {
     }
 
-    @SubscribeEvent
-    public void onEntityHurt(LivingHurtEvent evt)
-    {
-        if (evt.getEntity() instanceof EntityVillager)
-        {
-            evt.setAmount(0);
-        }
-    }
+//    @SubscribeEvent
+//    public void onEntityHurt(LivingHurtEvent evt)
+//    {
+//        if (evt.getEntity() instanceof EntityVillager)
+//        {
+//            evt.setAmount(0);
+//        }
+//    }
 
     @SubscribeEvent
     public void onEntityJoinedWorld(EntityJoinWorldEvent event)
@@ -82,7 +82,7 @@ public class GlobalEventHandle
         EntityMob theDead=(EntityMob)event.getEntityLiving();
         MobSkillData data=MobSkillData.get(theDead);
         data.onPlayerDead();
-                if(data.level>=4)
+        if(data.level>=4)
         {
             switch(data.catalog)
             {
